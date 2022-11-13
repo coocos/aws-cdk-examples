@@ -12,7 +12,7 @@ export interface ProductRestApiProps {
 }
 
 export class ProductRestApi extends Construct {
-  public lambda: any;
+  public lambda: NodejsFunction;
 
   constructor(scope: Construct, id: string, props: ProductRestApiProps) {
     super(scope, id);
