@@ -1,8 +1,8 @@
 {
-  "name": "api-gw-lambda-dynamodb-rest-api",
+  "name": "serverless-rest-api",
   "version": "0.1.0",
   "bin": {
-    "api-gw-lambda-dynamodb-rest-api": "bin/api-gw-lambda-dynamodb-rest-api.js"
+    "serverless-rest-api": "bin/serverlessRestApiApp.js"
   },
   "scripts": {
     "build": "tsc",

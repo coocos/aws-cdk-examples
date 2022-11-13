@@ -7,6 +7,8 @@ export const Product = z.object({
   name: z.string(),
 });
 
+export type Product = z.infer<typeof Product>;
+
 export type ApiHandler = (
   event: APIGatewayProxyEvent,
   context: Context

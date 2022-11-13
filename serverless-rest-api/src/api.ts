@@ -1,34 +1,17 @@
 import {
-  DeleteItemCommand,
-  DynamoDBClient,
-  PutItemCommand,
-  QueryCommand,
-  ScanCommand,
-} from "@aws-sdk/client-dynamodb";
-import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
   Context,
 } from "aws-lambda";
 import { v4 as uuidv4 } from "uuid";
-import { env } from "process";
-import { ApiHandler, Product } from "../types";
+import * as repository from "./repository";
+import { ApiHandler, Product } from "./types";
 
 const listProducts: ApiHandler = async (event, context) => {
-  const client = new DynamoDBClient({});
-  const output = await client.send(
-    new ScanCommand({
-      TableName: env.TABLE_NAME,
-    })
-  );
+  const products = await repository.listProducts();
   return {
     statusCode: 200,
-    body:
-      output.Items?.map((item) => ({
-        id: item.id.S,
-        type: item.type.S,
-        name: item.name.S,
-      })) || [],
+    body: products,
   };
 };
 
@@ -42,17 +25,7 @@ const createProduct: ApiHandler = async (event, context) => {
     };
   }
   const product = Product.parse({ ...JSON.parse(event.body), id: uuidv4() });
-  const client = new DynamoDBClient({});
-  const output = await client.send(
-    new PutItemCommand({
-      TableName: env.TABLE_NAME,
-      Item: {
-        id: { S: product.id },
-        type: { S: product.type },
-        name: { S: product.name },
-      },
-    })
-  );
+  await repository.createProduct(product);
   return {
     statusCode: 201,
     body: product,
@@ -67,36 +40,20 @@ const getProduct: ApiHandler = async (
     return {
       statusCode: 500,
       body: {
-        error: "Something went wrong",
+        error: "Internal server error",
       },
     };
   }
-  const client = new DynamoDBClient({});
-  const productId = event.pathParameters.product;
-  const output = await client.send(
-    new QueryCommand({
-      TableName: env.TABLE_NAME,
-      KeyConditionExpression: "id = :id",
-      ExpressionAttributeValues: {
-        ":id": { S: productId },
-      },
-    })
-  );
-  if (!output.Items || output.Items.length === 0) {
-    return {
-      statusCode: 404,
-      body: {},
-    };
-  }
-  const product = Product.parse({
-    id: output.Items[0].id.S,
-    type: output.Items[0].type.S,
-    name: output.Items[0].name.S,
-  });
-  return {
-    statusCode: 200,
-    body: product,
-  };
+  const product = await repository.getProduct(event.pathParameters.product);
+  return product === null
+    ? {
+        statusCode: 404,
+        body: {},
+      }
+    : {
+        statusCode: 200,
+        body: product,
+      };
 };
 
 const deleteProduct: ApiHandler = async (
@@ -107,22 +64,11 @@ const deleteProduct: ApiHandler = async (
     return {
       statusCode: 500,
       body: {
-        error: "Something went wrong",
+        error: "Internal server error",
       },
     };
   }
-  const client = new DynamoDBClient({});
-  const productId = event.pathParameters.product;
-  const output = await client.send(
-    new DeleteItemCommand({
-      TableName: env.TABLE_NAME,
-      Key: {
-        id: {
-          S: productId,
-        },
-      },
-    })
-  );
+  await repository.deleteProduct(event.pathParameters.product);
   return {
     statusCode: 200,
     body: {},
