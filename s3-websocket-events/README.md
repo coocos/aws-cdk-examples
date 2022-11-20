@@ -1,14 +1,26 @@
-# Welcome to your CDK TypeScript project
+# Broadcast S3 bucket events to API Gateway WebSocket clients
 
-This is a blank project for CDK development with TypeScript.
+This is a simple example of using CDK to deliver S3 bucket events to WebSocket clients connected via API Gateway.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+Infrastructure is defined in [/lib](./lib) and the API logic can be found in [/src/](./src/).
 
-## Useful commands
+## Running the example
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+Execute `cdk deploy` to deploy the stack. Once the stack is deployed, CDK will output the WebSocket address for API Gateway, as well as the S3 bucket name.
+
+To establish a WebSocket connection to the API Gateway, you can use something like [Insomnia](https://insomnia.rest/products/insomnia) or whatever tool you prefer. Once you've established the WebSocket connection, copy a file to the S3 bucket using aws-cli:
+
+```
+aws s3 cp ./your_file_here.txt s3://your-bucket-here
+```
+
+You should see a notification delivered over the WebSocket connection with details of the bucket and the created object:
+
+```json
+[
+  {
+    "bucket": "s3websocketeventsstack-targetbucket6bbf3429-s9n5fcvf3242",
+    "object": "your_file_here.txt"
+  }
+]
+```

@@ -7,6 +7,14 @@ import {
 
 import { z } from "zod";
 
+const ConnectionItems = z
+  .object({
+    Id: z.object({
+      S: z.string(),
+    }),
+  })
+  .array();
+
 export async function addConnection(table: string, id: string) {
   const client = new DynamoDBClient({});
   await client.send(
@@ -44,14 +52,6 @@ export async function dropConnection(table: string, id: string) {
   );
 }
 
-const ConnectionItems = z
-  .object({
-    Id: z.object({
-      S: z.string(),
-    }),
-  })
-  .array();
-
 export async function listConnections(table: string) {
   const client = new DynamoDBClient({});
   const response = await client.send(
@@ -69,6 +69,5 @@ export async function listConnections(table: string) {
       ProjectionExpression: "Id",
     })
   );
-  const items = ConnectionItems.parse(response.Items).map((item) => item.Id.S);
-  console.log(items);
+  return ConnectionItems.parse(response.Items).map((item) => item.Id.S);
 }

@@ -32,15 +32,12 @@ export async function handler(
       await repository.addConnection(CONNECTIONS_TABLE, connectionId);
       break;
     }
-    case "MESSAGE": {
-      await repository.listConnections(CONNECTIONS_TABLE);
-      break;
-    }
     case "DISCONNECT": {
       await repository.dropConnection(CONNECTIONS_TABLE, connectionId);
       break;
     }
   }
+
   return {
     statusCode: 200,
   };

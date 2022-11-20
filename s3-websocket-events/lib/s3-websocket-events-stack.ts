@@ -1,8 +1,10 @@
 import * as path from "path";
+
 import * as cdk from "aws-cdk-lib";
-import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as s3n from "aws-cdk-lib/aws-s3-notifications";
+import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import { WebSocketLambdaIntegration } from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
 import { Construct } from "constructs";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
@@ -22,7 +24,7 @@ export class S3WebsocketEventsStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    const websocketHandler = new NodejsFunction(this, "ConnectHandler", {
+    const websocketHandler = new NodejsFunction(this, "WebSocketHandler", {
       entry: path.join(__dirname, "..", "src", "websocket.ts"),
       bundling: {
         minify: true,
@@ -59,12 +61,34 @@ export class S3WebsocketEventsStack extends cdk.Stack {
       autoDeploy: true,
     });
 
-    new CfnOutput(this, "WebsocketApiUrl", {
-      value: devStage.url,
+    const bucket = new s3.Bucket(this, "TargetBucket", {
+      autoDeleteObjects: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    const bucketHandler = new NodejsFunction(this, "BucketHandler", {
+      entry: path.join(__dirname, "..", "src", "bucket.ts"),
+      bundling: {
+        minify: true,
+      },
+      environment: {
+        API_ENDPOINT: devStage.callbackUrl,
+        CONNECTIONS_TABLE: connectionsTable.tableName,
+      },
+      reservedConcurrentExecutions: 1,
+    });
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3n.LambdaDestination(bucketHandler)
+    );
+    api.grantManageConnections(bucketHandler);
+    connectionsTable.grantReadWriteData(bucketHandler);
+
+    new CfnOutput(this, "BucketName", {
+      value: bucket.bucketName,
     });
 
-    new CfnOutput(this, "WebSocketApiCallbackUrl", {
-      value: devStage.callbackUrl,
+    new CfnOutput(this, "WebsocketApiUrl", {
+      value: devStage.url,
     });
   }
 }
