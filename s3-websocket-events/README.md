@@ -1,6 +1,8 @@
 # Broadcast S3 bucket events to API Gateway WebSocket clients
 
-This is a simple example of using CDK to deliver S3 bucket events to WebSocket clients connected via API Gateway.
+This is a simple example of using CDK to deliver S3 bucket events to WebSocket clients connected via API Gateway:
+
+![Architecture diagram](./docs/diagram.png)
 
 Infrastructure is defined in [/lib](./lib) and the API logic can be found in [/src/](./src/).
 
